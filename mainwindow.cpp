@@ -7,6 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    setWindowTitle("Сервер");
+
     server = new Server();
 
     ui->listMessage->setLineWrapMode(QTextEdit::NoWrap);

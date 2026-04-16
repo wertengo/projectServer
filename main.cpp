@@ -3,12 +3,20 @@
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+#include <QFile>
 #include "server.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-//    Server server;
+
+    QFile qss(":/styles.qss");
+    if (qss.open(QFile::ReadOnly)) {
+        a.setStyleSheet(qss.readAll());
+        qss.close();
+    }else{
+        qDebug() << "ERROR: Не удалось открыть файл стилей для чтения";
+    }
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();

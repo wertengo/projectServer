@@ -10,12 +10,18 @@
 #include <QByteArray>
 #include <QDebug>
 #include <QString>
-#include <algorithm>
 #include <QDir>
 #include <QSettings>
 #include <QDateTime>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkReply>
+#include <QUrlQuery>
+#include <QUrl>
 
-#define PORT 56789
+#include <algorithm>
+
 
 class Server : public QObject
 {
@@ -43,9 +49,14 @@ private:
     QList<QByteArray> message;
     QList<QTcpSocket*> clients;
     quint16 serverPort;
+    QString serverIP;
+    QString getLocationServer();
     void loadSettings();
     void saveServerPort(quint16 port);
     void saveClientIP(const QString &ip);
+    void readJSONFile(QString fileName);
+    void writeJSONFile();
+    void saveJSONFile(QByteArray arrayData);
 };
 
 #endif // SERVER_H
