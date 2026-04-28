@@ -14,6 +14,7 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = nullptr);
+    void setInitialConfigFile(const QString &path);
 //    void slotReadSettings();
 //    void slotSaveSettings();
 //    void slotLoadSettings();

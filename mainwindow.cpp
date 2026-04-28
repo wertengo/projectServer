@@ -44,6 +44,10 @@ void MainWindow::on_pushMessage_clicked()
     ui->textFieldMessage->clear();
 }
 
+void MainWindow::setInitialConfigFile(const QString &path) {
+    server->loadConfigFile(path);
+}
+
 //void MainWindow::slotLoadSettings(){
 //    configIniFile->setValue("port/open", "56789");
 //}
