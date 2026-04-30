@@ -8,6 +8,7 @@
 #include <QNetworkInterface>
 #include <QList>
 #include <QByteArray>
+#include <QDataStream>
 #include <QDebug>
 #include <QString>
 #include <QDir>
@@ -50,7 +51,7 @@ signals:
     void button_clicked_signal();
 
 public slots:
-    void sendMessage(QString message);
+    void sendMessage(const QString &message);
 
 private slots:
 
@@ -59,6 +60,7 @@ private slots:
     void deleteClient();
 
 private:
+    quint64 m_nNextBlockSize;
     const int maxUser = 10;
     QStringList logList;
     QQueue<QString> userQueue;

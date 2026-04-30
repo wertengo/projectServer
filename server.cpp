@@ -2,7 +2,7 @@
 
 #include <QApplication>
 
-Server::Server()
+Server::Server() : m_nNextBlockSize(0)
 {
     tcpServer = new QTcpServer(this);
     // loadSettings();
@@ -92,45 +92,105 @@ void Server::addClient(){
     infoLog.append(QString::number(clients.size()));
     emit logMessage(infoLog);
 //    connect(socket, SIGNAL(disconnected()), this, SLOT(deleteClient()));
-    socket->write(message.at(1));
+    // socket->write(message.at(1));
 //    socket->disconnectFromHost();
 //    connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
     connect(socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(deleteClient()));
 }
 
-void Server::sendMessage(QString message){
-    QByteArray dataToSend = message.toUtf8();
+// void Server::sendMessage(QString message){
+//     QByteArray dataToSend = message.toUtf8();
 
-    for(QTcpSocket *socket : clients){
+//     for(QTcpSocket *socket : clients){
+//         if (socket->state() == QAbstractSocket::ConnectedState) {
+//             socket->write(dataToSend);
+//             socket->flush();
+//         }
+//     }
+// }
+
+void Server::sendMessage(const QString &message)
+{
+    QByteArray payload = message.toUtf8();
+    QByteArray block;
+    QDataStream out(&block, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_5_0);
+    out << (quint64)0;
+    out << payload;
+    out.device()->seek(0);
+    out << (quint64)(block.size() - sizeof(quint64));
+
+    for (QTcpSocket *socket : clients) {
         if (socket->state() == QAbstractSocket::ConnectedState) {
-            socket->write(dataToSend);
+            socket->write(block);
             socket->flush();
         }
     }
 }
 
-void Server::onReadyRead(){
+// void Server::onReadyRead(){
+//     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+
+//     if(!socket) return;
+
+//     QByteArray array = socket->readAll();
+
+//     if (array.startsWith('{') || array.startsWith('[')) {
+//         saveJSONFile(array);
+//     }else if(array.startsWith('T')){
+//         QString arrayAsString = QString::fromUtf8(array.mid(2));
+
+//         if (arrayAsString.isEmpty()) {
+//             return;
+//         }
+
+//         sendMessage(arrayAsString);
+//         qDebug()<<"INFO: Сокету пришли данные, готовые к чтению. Данные: " << arrayAsString << " Index: " << clients.indexOf(socket);
+//         emit logMessage("Получено от клиента " + arrayAsString + " Index: " + QString::number(clients.indexOf(socket)));
+//     }else{
+//         qWarning() << "Неизвестный формат данных: " << array;
+//     }
+// }
+
+void Server::onReadyRead()
+{
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) return;
 
-    if(!socket) return;
+    QDataStream in(socket);
+    in.setVersion(QDataStream::Qt_5_0);
 
-    QByteArray array = socket->readAll();
+    for (;;) {
+        if (m_nNextBlockSize == 0) {
+            if (socket->bytesAvailable() < sizeof(quint64)) {
+                return;
+            }
+            in >> m_nNextBlockSize;
+        }
 
-    if (array.startsWith('{') || array.startsWith('[')) {
-        saveJSONFile(array);
-    }else if(array.startsWith('T')){
-        QString arrayAsString = QString::fromUtf8(array.mid(2));
-
-        if (arrayAsString.isEmpty()) {
+        if (socket->bytesAvailable() < m_nNextBlockSize) {
             return;
         }
 
-        sendMessage(arrayAsString);
-        qDebug()<<"INFO: Сокету пришли данные, готовые к чтению. Данные: " << arrayAsString << " Index: " << clients.indexOf(socket);
-        emit logMessage("Получено от клиента " + arrayAsString + " Index: " + QString::number(clients.indexOf(socket)));
-    }else{
-        qWarning() << "Неизвестный формат данных: " << array;
+        QByteArray payload;
+        in >> payload;
+
+        if (payload.startsWith('{') || payload.startsWith('[')) {
+            qDebug() << "Получили JSON файл от клиента: ";
+            saveJSONFile(payload);
+        } else if (payload.startsWith('T')) {
+            QString text = QString::fromUtf8(payload.mid(2));
+            if (!text.isEmpty()) {
+                sendMessage(text);
+                qDebug() << "INFO: Сокету пришли данные, готовые к чтению. Данны:" << text << " Index: " << clients.indexOf(socket);
+                emit logMessage("Получено от клиента " + text + " Index: " + QString::number(clients.indexOf(socket)));
+            }
+        } else {
+            qWarning() << "Неизвестный формат данных:" << payload;
+        }
+
+        m_nNextBlockSize = 0;
     }
 }
 
