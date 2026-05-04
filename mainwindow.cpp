@@ -10,12 +10,13 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Сервер");
 
     server = new Server();
+    udp_Server = new udpServer();
 
     ui->listMessage->setLineWrapMode(QTextEdit::NoWrap);
     ui->listMessage->setReadOnly(true);
 
     connect(server, SIGNAL(logMessage(QString)), this, SLOT(displayMessage(QString)));
-
+    connect(udp_Server, SIGNAL(logMessage(QString)), this, SLOT(displayMessage(QString)));
 }
 
 MainWindow::~MainWindow()
@@ -40,6 +41,7 @@ void MainWindow::on_pushMessage_clicked()
     message.append(ui->textFieldMessage->text().trimmed());
     ui->listMessage->append(message);
     server->sendMessage(message);
+    udp_Server->sendMessage("UDP " + message);
     message.clear();
     ui->textFieldMessage->clear();
 }

@@ -49,6 +49,8 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        udpserver.h
+        udpserver.cpp
         server.cpp
         server.h
         mainwindow.ui

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "server.h"
+#include "udpserver.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,5 +31,6 @@ private:
     Ui::MainWindow *ui;
 
     Server *server;
+    udpServer *udp_Server;
 };
 #endif // MAINWINDOW_H
