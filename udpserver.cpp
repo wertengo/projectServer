@@ -40,10 +40,34 @@ void udpServer::slotProcessDatagrams()
     QByteArray dateTime;
     QDataStream in(&baDatagram, QIODevice::ReadOnly);
     in.setVersion(QDataStream::Qt_5_0);
-    in >> dateTime;
-    // QString text = QString::fromUtf8(dateTime);
+    // in >> dateTime;
+
+    // char type = dateTime.at(0);
+    int8_t type;
+    in >> type;
+
+    if (type == 0x01) {
+        in >> dateTime;
+        QString message = QString::fromUtf8(baDatagram);
+        qDebug() << "Client UDP: " + QString::fromUtf8(baDatagram);
+        emit logMessage("Client UDP: " + QString::fromUtf8(baDatagram));
+    }else if(type == 0x02){
+        int packetNum;
+        memcpy(&packetNum, baDatagram.data() + 1, sizeof(int));
+
+        QByteArray fileData = baDatagram.mid(5);
+        qDebug() << "Пришел пакет файла №" << packetNum;
+        qDebug() << "Пришел файл txt";
+    }else{
+        qDebug() << "ERROR: Не корректный тип данных";
+    }
+
+    QString message = QString::fromUtf8(dateTime);
     qDebug() << "Client UDP: " + QString::fromUtf8(dateTime);
     emit logMessage("Client UDP: " + QString::fromUtf8(dateTime));
+
+    // QString text = QString::fromUtf8(dateTime);
+
 }
 
 void udpServer::sendMessage(QString message)
