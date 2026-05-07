@@ -31,43 +31,54 @@ void udpServer::slotProcessDatagrams()
 {
     QByteArray baDatagram;
 
-    do{
-        baDatagram.resize(m_pudp->pendingDatagramSize());
-        m_pudp->readDatagram(baDatagram.data(), baDatagram.size());
-    }while(m_pudp->hasPendingDatagrams());
+    // do{
+    //     baDatagram.resize(m_pudp->pendingDatagramSize());
+    //     m_pudp->readDatagram(baDatagram.data(), baDatagram.size());
+    // }while(m_pudp->hasPendingDatagrams());
 
-    // QDateTime dateTime;
-    QByteArray dateTime;
-    QDataStream in(&baDatagram, QIODevice::ReadOnly);
-    in.setVersion(QDataStream::Qt_5_0);
-    // in >> dateTime;
+    while (m_pudp->hasPendingDatagrams()) {
+        QByteArray baDatagramTest;
+        baDatagramTest.resize(m_pudp->pendingDatagramSize());
+        m_pudp->readDatagram(baDatagramTest.data(), baDatagramTest.size());
+        QByteArray payload;
+        QDataStream stream(&baDatagramTest, QIODevice::ReadOnly);
+        quint8 type;
+        quint32 packetNumber;
+        stream >> type;
 
-    // char type = dateTime.at(0);
-    int8_t type;
-    in >> type;
+        if (type == 0x01) {
+            int remainingSize = baDatagramTest.size() - sizeof(quint32);
+            payload = baDatagramTest.right(remainingSize);
+            QString message = QString::fromUtf8(payload);
+            qDebug() << "Client UDP: " + QString::fromUtf8(payload);
+            emit logMessage("Client UDP: " + QString::fromUtf8(payload));
+        }else if(type == 0x02){
+            stream >> packetNumber;
+            payload = baDatagramTest.mid(stream.device()->pos());
+            packetHistory.insert(packetNumber, QString::fromUtf8(payload));
+            qDebug() << "Пришел пакет файла №" << packetNumber;
+        }else{
+            qDebug() << "ERROR: Не корректный тип данных";
+        }
 
-    if (type == 0x01) {
-        in >> dateTime;
-        QString message = QString::fromUtf8(baDatagram);
-        qDebug() << "Client UDP: " + QString::fromUtf8(baDatagram);
-        emit logMessage("Client UDP: " + QString::fromUtf8(baDatagram));
-    }else if(type == 0x02){
-        int packetNum;
-        memcpy(&packetNum, baDatagram.data() + 1, sizeof(int));
+        // stream >> packetNumber;
 
-        QByteArray fileData = baDatagram.mid(5);
-        qDebug() << "Пришел пакет файла №" << packetNum;
-        qDebug() << "Пришел файл txt";
-    }else{
-        qDebug() << "ERROR: Не корректный тип данных";
+        // int remainingSize = baDatagramTest.size() - sizeof(int);
+        // payload = baDatagramTest.right(remainingSize);
     }
 
-    QString message = QString::fromUtf8(dateTime);
-    qDebug() << "Client UDP: " + QString::fromUtf8(dateTime);
-    emit logMessage("Client UDP: " + QString::fromUtf8(dateTime));
+    if (!packetHistory.isEmpty()) {
+        QMap<quint32, QString>::iterator it_packetHistory = packetHistory.begin();
+        QString text;
 
-    // QString text = QString::fromUtf8(dateTime);
+        for (; it_packetHistory != packetHistory.end(); ++it_packetHistory) {
+            qDebug() <<"Читаем packetHistory по ключу: " << it_packetHistory.key() << " Text по ключу: " << it_packetHistory.value();
+            text.append(it_packetHistory.value());
+        }
 
+        saveFileUDP(text);
+        qDebug() << "Пришел файл !!!";
+    }
 }
 
 void udpServer::sendMessage(QString message)
@@ -80,6 +91,29 @@ void udpServer::sendMessage(QString message)
     emit logMessage(message);
 
     m_pudp->writeDatagram(baDatagram, QHostAddress("172.16.202.129"), 2424);
+}
+
+void udpServer::saveFileUDP(QString text)
+{
+    QString fileName = "text.txt";
+    QString confPath = QString("%1/%2").arg(qApp->applicationDirPath()).arg("data");
+
+    QDir dir(confPath);
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    QString filePath = confPath + "/" + fileName;
+
+    QFile fileText(filePath);
+    if (!fileText.open(QIODevice::WriteOnly)) {
+        qWarning() << "Не удалось открыть файл infoJsonData.json для записи";
+        return;
+    }
+    QTextStream streamText(&fileText);
+    streamText << text;
+    // fileText.write(text);
+    fileText.close();
+    qDebug() << "Файл текста сохранен по этому пути: " << filePath;
 }
 
 udpServer::~udpServer()

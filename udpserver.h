@@ -1,6 +1,7 @@
 #ifndef UDPSERVER_H
 #define UDPSERVER_H
 
+#include <QApplication>
 #include <QObject>
 #include <QUdpSocket>
 #include <QByteArray>
@@ -9,6 +10,9 @@
 #include <QDateTime>
 #include <QTimer>
 #include <QDebug>
+#include <QMap>
+#include <QFile>
+#include <QDir>
 
 class udpServer : public QObject
 {
@@ -16,6 +20,7 @@ Q_OBJECT
 public:
     udpServer();
     void sendMessage(QString message);
+    void saveFileUDP(QString text);
     ~udpServer();
 
 signals:
@@ -24,6 +29,7 @@ signals:
 
 private:
     QUdpSocket* m_pudp;
+    QMap<quint32, QString> packetHistory;
 
 private slots:
     void slotSendDatagram();
