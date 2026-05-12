@@ -20,7 +20,7 @@ Q_OBJECT
 public:
     udpServer();
     void sendMessage(QString message);
-    void saveFileUDP(QString text);
+    void saveFileUDP(QByteArray textInByte);
     ~udpServer();
 
 signals:
@@ -29,7 +29,7 @@ signals:
 
 private:
     QUdpSocket* m_pudp;
-    QMap<quint32, QString> packetHistory;
+    QMap<quint32, QByteArray> packetHistory;
 
 private slots:
     void slotSendDatagram();
